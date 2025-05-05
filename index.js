@@ -2,7 +2,7 @@ import express, {json} from 'express';
 import mongoose from 'mongoose';
 import {registerValidation, loginValidation} from './validations/auth.js';
 import cors from 'cors';
-import {UserController} from './controllers/index.js';
+import {UserController,EventController} from './controllers/index.js';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import { handleValidationErrors, checkAuth } from './utils/index.js';
@@ -30,6 +30,13 @@ app.get('/auth/me', checkAuth, UserController.getMe);
 app.get('/auth/user', checkAuth, UserController.getUsers);
 app.get('/auth/getUser/:id', UserController.getUserById);
 app.put('/user/update', checkAuth, UserController.updateProfile);
+
+app.post('/calendar/createEvent', checkAuth, EventController.createEvent);
+app.get('/calendar/getEvent', checkAuth, EventController.getEvents);
+app.delete('/calendar/deleteEvent/:eventId',checkAuth, EventController.deleteEvent);
+
+
+
 
 app.listen(3000, (err) => {
     if (err) return console.log(err);
