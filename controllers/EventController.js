@@ -3,16 +3,15 @@ import Event from '../models/Event.js';
 
 export const createEvent = async (req, res) => {
   try {
-    const { start, description } = req.body;
+    const { start, description, title, userEmail } = req.body;
 
     if (!start || !description) {
       return res.status(400).json({
-        message: 'Поле start та description є обов\'язковими',
+        message: 'Поля start та description є обов\'язковими',
       });
     }
 
     const startDate = new Date(start);
-    
     if (isNaN(startDate.getTime())) {
       return res.status(400).json({
         message: 'Невірний формат дати для поля start',
@@ -21,16 +20,31 @@ export const createEvent = async (req, res) => {
 
     const endDate = addMinutes(startDate, 30);
 
+    let eventTitle;
+    let eventUserEmail;
+
+    if (req.userEmail === 'admin@gmail.com') {
+      if (!title || !userEmail) {
+        return res.status(400).json({
+          message: 'Адміністратор повинен вказати поля title та userEmail',
+        });
+      }
+      eventTitle = title;
+      eventUserEmail = userEmail;
+    } else {
+      eventTitle = `Запис на донорство від ${req.userEmail}`;
+      eventUserEmail = req.userEmail;
+    }
+
     const newEvent = new Event({
-      title: `Запис на донорство від ${req.userEmail}`,
+      title: eventTitle,
       start: startDate,
       end: endDate,
-      description: description,
-      userEmail: req.userEmail,
+      description,
+      userEmail: eventUserEmail,
     });
 
     await newEvent.save();
-
 
     res.status(201).json({
       message: 'Подію успішно створено',
