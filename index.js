@@ -2,10 +2,22 @@ import express, {json} from 'express';
 import mongoose from 'mongoose';
 import {registerValidation, loginValidation} from './validations/auth.js';
 import cors from 'cors';
-import {UserController,EventController ,syncEventsController} from './controllers/index.js';
+import {UserController,EventController ,syncEventsController,bloodDonationStatsController,donationController,NeededBloodController} from './controllers/index.js';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import { handleValidationErrors, checkAuth } from './utils/index.js';
+import multer from 'multer';
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage });
 
 const app = express();
 app.use(express.json());
@@ -24,6 +36,9 @@ cron.schedule('0 0 * * *', async () => {
     console.error('Помилка при виконанні завдання:', error);
   }
 });
+app.post('/user/updateAvatar', checkAuth, upload.single('image'), UserController.uploadAvatar);
+
+app.use('/uploads', express.static('uploads'));
 app.post('/auth/login',loginValidation, handleValidationErrors, UserController.login);
 app.post('/auth/register', registerValidation,handleValidationErrors, UserController.register);
 app.get('/auth/me', checkAuth, UserController.getMe);

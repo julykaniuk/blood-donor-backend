@@ -113,7 +113,6 @@ export const syncDeleteEvent = async (req, res) => {
     }
 
     const removedDonation = user.performedDonations.splice(donationIndex, 1)[0];
-    console.log('Removed Donation:', removedDonation);
     
     user.donations.scheduled = Math.max(0, user.donations.scheduled - 1);
     user.donations.canceled += 1;
@@ -132,6 +131,7 @@ export const syncDeleteEvent = async (req, res) => {
 
     res.status(200).json({
       message: 'Подія успішно видалена з переліку донацій, таблиці Event, статистику оновлено',
+       eventId,
     });
   } catch (error) {
     console.error('Помилка при видаленні події:', error);

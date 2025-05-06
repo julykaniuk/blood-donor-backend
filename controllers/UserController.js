@@ -166,6 +166,34 @@ export const updateProfile = async (req, res) => {
         res.status(500).json({ message: 'Не вдалося оновити профіль' });
     }
 };
+export const uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не завантажено' });
+    }
+
+    const avatarUrl = `/uploads/${req.file.originalname}`;
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      req.userId,
+      { avatarUrl },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'Користувача не знайдено' });
+    }
+
+    res.json({
+      message: 'Аватар успішно оновлено',
+      avatarUrl: updatedUser.avatarUrl,
+    });
+  } catch (err) {
+    console.error('Помилка при завантаженні аватара:', err);
+    res.status(500).json({ error: 'Не вдалося оновити аватар' });
+  }
+};
+
 export const getUsers = async (req, res) => {
     try {
         const users = await UserModel.find({});
@@ -198,4 +226,75 @@ export const getUserById = async (req, res) => {
         });
     }
 };
+export const updateContraindications = async (req, res) => {
+  const { name, days } = req.body;
 
+  if (!name || !days) {
+    return res.status(400).json({ message: "Ім’я та дні є обов’язковими" });
+  }
+
+  try {
+    const user = await UserModel.findById(req.userId);
+    if (!user) return res.status(404).json({ message: "Користувача не знайдено" });
+
+    const newContra = {
+      name,
+      days,
+      date: new Date(),
+    };
+
+    if (!Array.isArray(user.contraindications)) {
+      user.contraindications = [];
+    }
+
+    user.contraindications.push(newContra);
+
+    const today = new Date();
+    user.contraindications = user.contraindications.filter(({ date, days }) => {
+      const diff = (today - new Date(date)) / (1000 * 60 * 60 * 24);
+      return diff < days;
+    });
+
+    let maxRemainingDays = 0;
+    for (const { date, days } of user.contraindications) {
+      const passed = (today - new Date(date)) / (1000 * 60 * 60 * 24);
+      const remaining = Math.max(days - passed, 0);
+      if (remaining > maxRemainingDays) {
+        maxRemainingDays = remaining;
+      }
+    }
+
+    user.donationsPeriod = Math.ceil(maxRemainingDays);
+
+    await user.save();
+
+    res.json({
+      contraindications: user.contraindications,
+      donationsPeriod: user.donationsPeriod
+    });
+  } catch (err) {
+    console.error("Помилка серверу:", err);
+    res.status(500).json({ message: "Помилка серверу", error: err.message });
+  }
+};
+
+
+const updateDonationsPeriod = async () => {
+  try {
+    const users = await UserModel.find(); 
+    for (const user of users) {  
+      if (user.donationsPeriod > 0) {
+        user.donationsPeriod -= 1;
+
+        if (user.donationsPeriod <= 0) {
+          console.log(`Користувач ${user._id} може зробити нову донацію.`);
+        }
+
+        await user.save();
+        console.log(`Оновлено donationsPeriod для користувача ${user._id}: ${user.donationsPeriod}`);
+      }
+    }
+  } catch (error) {
+    console.error('Помилка при оновленні donationsPeriod:', error);
+  }
+};
