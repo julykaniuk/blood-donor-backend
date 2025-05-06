@@ -1,8 +1,8 @@
-import express, {json} from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import {registerValidation, loginValidation} from './validations/auth.js';
 import cors from 'cors';
-import {UserController,EventController ,syncEventsController, NeededBloodController} from './controllers/index.js';
+import {UserController,EventController ,syncEventsController,bloodDonationStatsController,donationController,NeededBloodController} from './controllers/index.js';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import { handleValidationErrors, checkAuth } from './utils/index.js';
@@ -55,6 +55,20 @@ app.delete('/syncDeleteEvent/:eventId',checkAuth, syncEventsController.syncDelet
 
 app.post('/needBlood/cteate',checkAuth, NeededBloodController.createNeededBlood);
 app.get('/getNeedBlood',NeededBloodController.getNeededBlood);
+
+
+app.post('/blood-donations',checkAuth, bloodDonationStatsController.addDonation);
+app.post('/user/contraindications', checkAuth, UserController.updateContraindications);
+
+app.get('/blood-donations',checkAuth, bloodDonationStatsController.getAllDonations);
+app.delete('/blood-donations/:id',checkAuth, bloodDonationStatsController.deleteDonation);
+
+app.put('/confirm/:userId',checkAuth, donationController.confirmDonation);
+app.get('/donation', donationController.getBloodDonationSummary);
+app.get('/getDonationPeriod', donationController.getDonationSummaryByPeriod);
+app.delete('/donation/delete/',checkAuth, donationController.decreaseDonationSummary);
+
+app.post('/user/contraindications', checkAuth, UserController.updateContraindications);
 
 
 app.listen(3000, (err) => {
